@@ -5,30 +5,38 @@ import java.math.BigInteger;
 import java.util.*;
 
 public class ScheduleJobs{
-     int numOfJobs;
-     PriorityQueue<Job> pq;
+     static int numOfJobs;
+     static PriorityQueue<Job> pq;
+     static PriorityQueue<Job> pq2;
      
-     public void addToHeap(String filename) {
+     public static void addToHeap(String filename) {
          String line = null;
          boolean isFirstLine = true;
-         try (BufferedReader br = new BufferedReader (new FileReader(filename)) {
+         try (BufferedReader br = new BufferedReader (new FileReader(filename))) {
             while ((line = br.readLine()) != null) {
                 if (isFirstLine) {
                     isFirstLine = false;
                     numOfJobs = Integer.parseInt(line.trim());
-                    pq = new PriorityQueue<Job>(numOfJobs);
+                    pq = new PriorityQueue<Job>(numOfJobs, new compareByDiffReverse());
+                    pq2 = new PriorityQueue<Job>(numOfJobs, Collections.reverseOrder());
                 }
-                String[] tokens = line.trim().split("\\s");
-                pq.add(new Job(Integer.parseInt(tokens[0], Integer.parseInt(tokens[1]);
+                else {
+                    String[] tokens = line.trim().split("\\s+");
+              //      System.out.println(tokens[0] + " + " + tokens[1]);
+                    pq.add(new Job(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1])));
+                    pq2.add(new Job(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1])));
+                }
             }   
+         } catch(IOException e) {
+             e.printStackTrace();
          }
      }
      
-     public int scheduleByDiff() {
-         int sum = 0;
-         int accLength = 0;
-         while (!pq.isEmpty()) {
-             Job j = pq.poll();
+     public static long scheduleByDiff(PriorityQueue<Job> p) {
+         long sum = 0;
+         long accLength = 0;
+         while (!p.isEmpty()) {
+             Job j = p.poll();
              accLength += j.getLength();
              sum += accLength * j.getWeight();
          }
@@ -38,31 +46,35 @@ public class ScheduleJobs{
      public static void main(String []args){
         System.out.println("Hello World");
         addToHeap("input.txt");
-        int wct1 = scheduleByDiff();
-        System.out.println("answer1: " +wct1);
+        long wct1 = scheduleByDiff(pq);
+        long wct2 = scheduleByDiff(pq2);
+        System.out.println("answer1: " + wct1);
+        System.out.println("answer2: " + wct2);
         
      }
      
-     private class compareByDiffReverse implements Comparator {
-         private int(Object o1, Object o2) {
-             Job j1 = (Job) o1;
-             Job j2 = (Job) o2;
-             return j2.getDiff() - j1.getDiff();
+     public static class compareByDiffReverse implements Comparator<Job> {
+         public int compare(Job j1, Job j2) {
+             int diff = j1.getDiff() - j2.getDiff();
+             if (diff != 0)
+                return -diff;
+             else
+                return -(j1.getWeight() - j2.getWeight());
          }
      }
      
-     private class Job implements Comparable {
+     private static class Job implements Comparable {
          private int weight;
          private int length;
          private double ratio;
-         private double diff;
+         private int diff;
          
          Job(){}
          
          Job(int weight, int length) {
              this.weight = weight;
              this.length = length;
-             this.ratio = weight / length;
+             this.ratio = (double) weight / (double) length;
              this.diff = weight - length;
          }
          
@@ -74,7 +86,7 @@ public class ScheduleJobs{
              return length;
          }
          
-         private int getRatio(){
+         private double getRatio(){
              return ratio;
          }
          
@@ -82,9 +94,17 @@ public class ScheduleJobs{
              return diff;
          }
          
-         private int compareTo(Object o) {
+        public int compareTo(Object o) {
              Job j = (Job) o;
-             return this.ratio- j.ratio;
+             double diff = this.ratio- j.ratio;
+             if (diff > 0)
+                return 1;
+             else if (diff < 0)
+                return -1;
+             else if (this.weight == j.weight)
+                return 0;
+             else 
+                return this.weight - j.weight;
          }
      }
 }
