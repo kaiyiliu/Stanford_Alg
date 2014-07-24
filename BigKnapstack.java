@@ -4,7 +4,7 @@ import java.io.*;
 public class BigKnapstack{
     public static int I;
     public static int W;
-    public static HashMap<Integer, Double> a;          //a: Weight, Value pair
+    public static TreeMap<Integer, Double> a;          //a: Weight, Value pair
 //    public static Stack<Integer> bag;
 
     public static void readIn(String filename) {
@@ -12,6 +12,8 @@ public class BigKnapstack{
         boolean isFirstLine = true;
         double newValue;
         int newWeight;
+        HashMap<Integer, Double> temp = new HashMap<Integer, Double>();
+        HashSet<Integer> deleted = new HashSet<Integer>();
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             while ((line = br.readLine()) != null) {
                 String[] tokens = line.split("\\s+");
@@ -19,7 +21,7 @@ public class BigKnapstack{
                     isFirstLine = false;
                     W = Integer.parseInt(tokens[0]);
                     I = Integer.parseInt(tokens[1]);
-                    a = new HashMap<Integer, Double>();
+                    a = new TreeMap<Integer, Double>();
                    // bag = new Stack<Integer>();
                    a.put(0, 0.0);
                 } else {
@@ -28,9 +30,18 @@ public class BigKnapstack{
                         newValue = Double.parseDouble(tokens[0]) + entry.getValue();
                         // the value must be monotonically increasing in one single column,
                         // and must also be increasing in one single row
-                        if (isIncreased(newWeight, newValue) && newWeight <= W)
-                            a.put(newWeight, newValue);
+                        // AND after the insertion, the following value must be larger!
+                        if (newWeight <= W && isIncreased(newWeight, newValue)) {
+                            temp.put(newWeight, newValue);              // cannot modify the original HashMap via iterating
+                            checkDecreased(newWeight, newValue, deleted);     // check if the items after the new insersion are increasing
+                        }
                     }
+                    for (Integer w : deleted)
+                        a.remove(w);
+                    a.putAll(temp);
+                    temp.clear();
+                    deleted.clear();
+                   //System.out.println(a);
                 }
             }
         } catch (IOException e) {
@@ -40,13 +51,19 @@ public class BigKnapstack{
     }
     
     public static boolean isIncreased(int w, double v) {
-        while (a.get(w) == null) {
-            w--;
-        }
-        if (a.get(w) < v)
+        if (a.get(a.floorKey(w)) < v)
             return true;
         else
             return false;
+    }
+    
+    public static void checkDecreased(int w, double v, HashSet<Integer> deleted) {
+        for (Map.Entry<Integer, Double> entry : a.tailMap(w, false).entrySet()) {
+            if (v >= entry.getValue())
+                deleted.add(entry.getKey());
+            else
+                return;
+        }
     }
     
     // public static void fillIn() {
@@ -77,9 +94,9 @@ public class BigKnapstack{
     public static void main(String []args){
         System.out.println("Hello World");
         readIn("input.txt");
-        int w = W;
-        while (!a.containsKey(w))
-            w--;
-        System.out.println("optimal value: " + a.get(w));
+        // int w = W;
+        // while (!a.containsKey(w))
+        //     w--;
+        System.out.println("optimal value: " + a.get(a.lastKey()));
     }
 }
