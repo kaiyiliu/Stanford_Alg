@@ -5,7 +5,7 @@ public class KClustering{
     public static int numOfV;
     public static int K = 4;
     public static PriorityQueue<Edge> pq;
-    public static QuickUnionUF uf;
+    public static AdavancedUF uf;
     
     public static void createUWG(String filename) {
         String line = null;
@@ -16,7 +16,7 @@ public class KClustering{
                 if (isFirstLine) {
                     isFirstLine = false;
                     numOfV = Integer.parseInt(tokens[0]);
-                    uf = new QuickUnionUF(numOfV);
+                    uf = new AdavancedUF(numOfV);
                     pq = new PriorityQueue<Edge>(numOfV);
                 } else {
                     int v1 = Integer.parseInt(tokens[0]);
@@ -29,12 +29,11 @@ public class KClustering{
             e.printStackTrace();
         }
     }
-    
     public static double maxSpacingClassify() {
         int v1;
         int v2;
         Edge anEdge;
-        while (uf.getCount() != 4) {
+        while (uf.getCount() != K) {
             while (true) {
                 anEdge = pq.poll();
                 v1 = anEdge.getOne();
@@ -71,20 +70,20 @@ public class KClustering{
         
     }
     
-    private static class QuickUnionUF {
+    private static class AdavancedUF {
         private int[] leader;
         private int[] size;
         private int count;
         
-        QuickUnionUF() {}
+        AdavancedUF() {}
         
-        QuickUnionUF(int n) {
+        AdavancedUF(int n) {
             count = n;
             leader = new int[n + 1];
             size = new int[n + 1];
             for (int i = 1; i <= n; i++) {
                 leader[i] = i;
-                size[i] = 1;
+                size[i] = 0;
             }
         }
         
@@ -93,10 +92,16 @@ public class KClustering{
         }
         
         private int find(int i) {
-            while (leader[i] != i) {
-                i = leader[i];
+            int root = i;
+			while (leader[root] != root) {
+                root = leader[root];
             }
-            return i;
+			// path compression
+			while (leader[i] != root) {
+				i = leader[i];
+				leader[i] = root;
+			}
+            return root;
         }
         
         private boolean isConnected(int i, int j) {
@@ -110,10 +115,13 @@ public class KClustering{
                 return false;
             else if (size[iRoot] < size[jRoot]) {
                 leader[iRoot] = jRoot;
-                size[jRoot] += size[iRoot];
-            } else {
+                // size[jRoot] += size[iRoot];
+            } else if (size[iRoot] > size[jRoot]){
                 leader[jRoot] = iRoot;
-                size[iRoot] += size[jRoot];
+                // size[iRoot] += size[jRoot];
+            } else {
+            	leader[iRoot] = jRoot;
+				size[jRoot]++;
             }
             count --;
             return true;

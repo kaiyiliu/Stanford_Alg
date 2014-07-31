@@ -1,12 +1,15 @@
+package dynamicProgramming;
+
 import java.io.*;
-import java.util.*;
 
 public class APSP{
     public static int V;
     public static int E;
-    public static HashMap<Integer, Double>[] adj;
-    public static double[][][] dp;
-    public static double MAX = 999999;
+    // public static HashMap<Integer, Double>[] adj; // do not store into adj, directly into dp[][]
+    public static double[][] dp;
+    public static double[] temp;   // record new value in every inner loop
+    public static double[] K;		// at every fixed k loop, record the k row info
+    public static double MAX = 999999.9;
     
     public static void readIn(String filename) {
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
@@ -19,15 +22,18 @@ public class APSP{
                     isFirstLine = false;
                     V = Integer.parseInt(tokens[0]);
                     E = Integer.parseInt(tokens[1]);
-                    adj = new HashMap[V+1];
-                    for (int i = 0; i <= V; i++)
-                        adj[i] = new HashMap<Integer, Double>();
-                    dp = new double[V+1][V+1][V+1];
+//                    adj = new HashMap[V+1];
+//                    for (int i = 0; i <= V; i++)
+//                        adj[i] = new HashMap<Integer, Double>();
+					System.out.println(V);
+                    dp = new double[V+1][V+1];
+                    temp = new double[V+1]; 
                 } else {
                     int head = Integer.parseInt(tokens[0]);
                     int tail = Integer.parseInt(tokens[1]);
                     double weight = Double.parseDouble(tokens[2]);
-                    adj[head].put(tail, weight);
+                    //adj[head].put(tail, weight);
+                    dp[head][tail] = weight;
                 }
             }
         } catch (IOException e) {
@@ -37,26 +43,26 @@ public class APSP{
     
     public static void runFW() {
         //init k=0
-        double weight = MAX;
         for (int i = 1; i <= V; i++)
-            for (int j = 1; j <= V; j++) {
-                if (i == j)
-                    dp[i][j][0] = 0;
-                else if ((weight = (double) adj[i].get(j)) != MAX)
-                    dp[i][j][0] = weight;
-                else
-                    dp[i][j][0] = MAX;
-            }
+        	for (int j = 1; j <= V; j++)
+        		if (i != j && dp[i][j] == 0)
+        			dp[i][j] = MAX;
         //dp
-        for (int k = 1; k <= V; k++)
-            for (int i = 1; i <= V; i++)
-                for (int j = 1; j <= V; j++)
-                    dp[i][j][k] = Math.min(dp[i][j][k-1], dp[i][k][k-1] + dp[k][j][k-1]);
+        for (int k = 1; k <= V; k++) {
+        	K = dp[k];
+            for (int i = 1; i <= V; i++) {
+                for (int j = 1; j <= V; j++) {
+                	temp[j] = Math.min(dp[i][j], dp[i][k] + K[j]);
+                }
+                // cope temp to dp[i]
+                System.arraycopy(temp, 1, dp[i], 1, V);
+            }
+        }
     }
     
     public static boolean containsNC() {
         for (int i = 1; i <= V; i++) {
-            if (dp[i][i][V] < 0)
+            if (dp[i][i] < 0)
                 return true;
         }
         return false;
@@ -64,7 +70,8 @@ public class APSP{
     
     public static void main(String []args){
         System.out.println("Hello World");
-        readIn("input.txt");
+        double startTime = System.currentTimeMillis();
+        readIn("input1.txt");
         runFW();
         if (containsNC()) {
             System.out.println("Contains Negative Cycle.");
@@ -73,10 +80,13 @@ public class APSP{
             for (int i = 1; i <= V; i++)
                 for (int j = 1; j<= V; j++) {
                     if (i != j)
-                        result = Math.min(result, dp[i][j][V]);
+                        result = Math.min(result, dp[i][j]);
                 }
             System.out.println("shortest shortest path length: " + result);
         }
+        double stopTime = System.currentTimeMillis();
+        double time = stopTime-startTime;
+        System.out.println("time: " + time + "ms");
     }
     
     // private static class Edge implements Comparable<Edge> {
